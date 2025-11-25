@@ -1,13 +1,13 @@
 spring:
-
   application:
     name: EmployeeOnboardingV2
 
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/employeeDB
-#    username: postgres
-#    password: 1234
-#    driver-class-name: org.postgresql.Driver
+  datasource:
+    url: ${DATABASE_URL}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        ssl: true
 
   jpa:
     hibernate:
@@ -16,32 +16,24 @@ spring:
     properties:
       hibernate:
         format_sql: false
-#    defer-datasource-initialization: true
-
-#  sql:
-#    init:
-#      mode: always
-#      data-locations: classpath:data.sql
 
   mail:
     host: smtp.gmail.com
     port: 587
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
-
-  properties:
-    mail:
-      smtp:
-        auth: true
-        starttls:
-          enable: true
-          required: true
-        ssl:
-          trust: smtp.gmail.com
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
 
 jwt:
   secretKey: ${JWT_SECRET}
-#  amdgJInfslfjr4584shes8eu6sdgrt4hit51v1x145eq41fdxhjufjnh14ui6gvcfy
 
 server:
   port: ${PORT:8080}
