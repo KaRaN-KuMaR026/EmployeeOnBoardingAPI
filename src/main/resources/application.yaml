@@ -26,8 +26,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: email@gmail.com
-    password: qrsn tyjo ldmk ilvi
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
 
   properties:
     mail:
@@ -40,8 +40,10 @@ spring:
           trust: smtp.gmail.com
 
 jwt:
-  secretKey: amdgJInfslfjr4584shes8eu6sdgrt4hit51v1x145eq41fdxhjufjnh14ui6gvcfy
+  secretKey: ${JWT_SECRET}
+#  amdgJInfslfjr4584shes8eu6sdgrt4hit51v1x145eq41fdxhjufjnh14ui6gvcfy
 
 server:
+  port: ${PORT:8080}
   servlet:
     context-path: /api/v2
