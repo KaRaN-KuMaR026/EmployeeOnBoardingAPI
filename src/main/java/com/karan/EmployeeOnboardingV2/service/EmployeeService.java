@@ -140,7 +140,9 @@ public class EmployeeService {
         Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page - 1, size, sort);
 
-        Specification<Employee> spec = Specification.allOf();
+        Specification<Employee> spec = Specification.allOf(
+                (root, query, cb) -> cb.notEqual(root.get("department").get("id"), 10)
+        );
 
         if(id != null) {
             log.info("Filtering employees using id");
