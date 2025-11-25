@@ -11,7 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/employees")
@@ -33,14 +33,17 @@ public class EmployeeController {
 
     //EMPLOYEE END-POINTS
     @GetMapping
-    public ResponseEntity<List<EmployeeResponseDTO>> getEmployees(
+    public ResponseEntity<PagedResponseDTO> getEmployees(
+            @RequestParam(defaultValue = "1")int page,
+            @RequestParam(defaultValue = "10")int size,
+            @RequestParam(defaultValue = "id")String sortBy,
+            @RequestParam(defaultValue = "asc")String sortDir,
             @RequestParam(required = false)Long id,
             @RequestParam(required = false)String name,
-            @RequestParam(required = false, name = "dateofjoining") LocalDate dateOfJoining,
-            @RequestParam(required = false, name = "phonenumber")String phoneNumber,
-            @RequestParam(required = false, defaultValue = "id")String sort
+            @RequestParam(required = false) LocalDate dateOfJoining,
+            @RequestParam(required = false)String phoneNumber
     ) {
-        return ResponseEntity.ok(employeeService.getEmployees(id, name, dateOfJoining, phoneNumber, sort));
+        return ResponseEntity.ok(employeeService.getEmployees(page, size, sortBy, sortDir, id, name, dateOfJoining, phoneNumber));
     }
 
     @PostMapping

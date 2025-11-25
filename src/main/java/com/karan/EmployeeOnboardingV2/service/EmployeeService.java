@@ -1,26 +1,29 @@
 package com.karan.EmployeeOnboardingV2.service;
 
-import com.karan.EmployeeOnboardingV2.dto.PublicEmployeeResponseDTO;
+import com.karan.EmployeeOnboardingV2.dto.*;
 import com.karan.EmployeeOnboardingV2.entity.*;
-import com.karan.EmployeeOnboardingV2.dto.EmployeeRequestDTO;
-import com.karan.EmployeeOnboardingV2.dto.EmployeeResponseDTO;
-import com.karan.EmployeeOnboardingV2.dto.EmployeeUpdateDTO;
 import com.karan.EmployeeOnboardingV2.entity.type.RoleType;
 import com.karan.EmployeeOnboardingV2.repository.DepartmentRepository;
 import com.karan.EmployeeOnboardingV2.repository.DesignationRepository;
 import com.karan.EmployeeOnboardingV2.repository.EmployeeRepository;
 import com.karan.EmployeeOnboardingV2.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.criteria.Join;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 @Service
@@ -113,22 +116,82 @@ public class EmployeeService {
 
     @Transactional
     @PreAuthorize("hasAuthority('employee:read')")
-    public List<EmployeeResponseDTO> getEmployees(Long id, String name, LocalDate dateOfJoining, String phoneNumber, String sort) {
-        log.info("Accessing Full Employee Details");
-        Stream<Employee> stream = employeeRepository.findAll().stream()
-                .filter(emp -> id == null || Objects.equals(emp.getUser().getId(), id))
-                .filter(emp -> name == null || emp.getUser().getName().equalsIgnoreCase(name))
-                .filter(emp -> dateOfJoining == null || emp.getDateOfJoining() == dateOfJoining)
-                .filter(emp -> phoneNumber == null || Objects.equals(emp.getPhoneNumber(), phoneNumber))
-                .skip(1);
+    public PagedResponseDTO getEmployees(
+            int page,
+            int size,
+            String sortBy,
+            String sortDir,
+            Long id,
+            String name,
+            LocalDate dateOfJoining,
+            String phoneNumber
+    ) {
+        log.info("Accessing Employee Details");
 
-        stream = switch(sort.toLowerCase()) {
-            case "name" -> stream.sorted(Comparator.comparing(emp -> emp.getUser().getName()));
-            case "dateofjoining" -> stream.sorted(Comparator.comparing(Employee::getDateOfJoining));
-            default -> stream.sorted(Comparator.comparing(emp -> emp.getUser().getId()));
-        };
+        if (page <= 0) {
+            log.error("Page number must be greater than 0");
+            throw new IllegalArgumentException("Page number must be greater than 0");
+        }
+        if (size <= 0) {
+            log.error("Page size must be greater than 0");
+            throw new IllegalArgumentException("Page size must be greater than 0");
+        }
 
-        return stream.map(this::convertToResponseDTO).toList();
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
+
+        Specification<Employee> spec = Specification.allOf();
+
+        if(id != null) {
+            log.info("Filtering employees using id");
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("id"), id)
+            );
+        }
+        if(name != null && !name.isBlank()) {
+            log.info("Filtering employees using name");
+            spec = spec.and((root, query, cb) -> {
+                Join<Employee, User> userJoin = root.join("user");
+                return cb.like(
+                        cb.lower(userJoin.get("name")), "%" + name.toLowerCase() + "%"
+                );
+            });
+        }
+        if(dateOfJoining != null) {
+            log.info("Filtering employees using date of joining");
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("dateOfJoining"), dateOfJoining)
+                    );
+        }
+        if(phoneNumber != null && !phoneNumber.isBlank()) {
+            log.info("Filtering employees using phone number");
+            spec = spec.and((root, query, cb) -> {
+                Join<Employee, User> userJoin = root.join("user");
+                return cb.equal(userJoin.get("phoneNumber"), phoneNumber);
+            });
+        }
+
+        Page<EmployeeResponseDTO> employeePage = employeeRepository.findAll(spec, pageable).map(this::convertToResponseDTO);
+
+        if (page > employeePage.getTotalPages() && employeePage.getTotalPages() > 0) {
+            log.error("Requested page number exceeds total available pages");
+            throw new IllegalArgumentException("Requested page number exceeds total available pages");
+        }
+
+        if (employeePage.getContent().isEmpty()) {
+            log.error("No Employees found for the given filters");
+            throw new NoResultException("No Employees found for the given filters");
+        }
+
+        return PagedResponseDTO
+                .builder()
+                .data(employeePage.getContent())
+                .currentPage(employeePage.getNumber() + 1)
+                .pageSize(employeePage.getSize())
+                .totalElements(employeePage.getTotalElements())
+                .totalPages(employeePage.getTotalPages())
+                .last(employeePage.isLast())
+                .build();
     }
 
     @Transactional
