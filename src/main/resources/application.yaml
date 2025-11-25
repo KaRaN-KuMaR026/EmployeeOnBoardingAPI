@@ -3,11 +3,11 @@ spring:
   application:
     name: EmployeeOnboardingV2
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/employeeDB
-    username: postgres
-    password: 1234
-    driver-class-name: org.postgresql.Driver
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/employeeDB
+#    username: postgres
+#    password: 1234
+#    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
