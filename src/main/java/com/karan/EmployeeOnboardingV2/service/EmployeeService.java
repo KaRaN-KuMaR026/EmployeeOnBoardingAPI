@@ -13,6 +13,9 @@ import jakarta.persistence.criteria.Join;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,10 +37,12 @@ public class EmployeeService {
     private final DepartmentRepository departmentRepository;
     private final DesignationRepository designationRepository;
     private final UserRepository userRepository;
+    private final String CACHE_NAME = "employees";
 
     //CREATE
     @Transactional
     @PreAuthorize("hasAuthority('employee:write')")
+    @Cacheable(cacheNames = CACHE_NAME, key = "#result.id")
     public EmployeeResponseDTO onBoardEmployee(EmployeeRequestDTO requestDTO) {
         log.info("Employee onboarding initiated for User with Id {}", requestDTO.getUserId());
         User user = userRepository.findById(requestDTO.getUserId())
@@ -210,6 +215,7 @@ public class EmployeeService {
 
     @Transactional
     @PreAuthorize("#id == principal.id or hasAuthority('employee:read')")
+    @Cacheable(cacheNames = CACHE_NAME, key = "#id")
     public EmployeeResponseDTO getEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found with Id " + id));
@@ -220,6 +226,7 @@ public class EmployeeService {
     //UPDATE
     @Transactional
     @PreAuthorize("#id == principal.id or hasAuthority('employee:write')")
+    @CachePut(cacheNames = "CACHE_NAME", key = "#id")
     public EmployeeResponseDTO updateEmployee(Long id, EmployeeUpdateDTO updateDTO) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found with Id " + id));
@@ -262,6 +269,7 @@ public class EmployeeService {
     //DELETE
     @Transactional
     @PreAuthorize("hasAuthority('employee:delete')")
+    @CacheEvict(cacheNames = CACHE_NAME, key = "#id")
     public void deleteEmployee(Long id) {
         if(!employeeRepository.existsById(id)) {
             throw new IllegalArgumentException("Employee with Id " + id + " does not exist");
