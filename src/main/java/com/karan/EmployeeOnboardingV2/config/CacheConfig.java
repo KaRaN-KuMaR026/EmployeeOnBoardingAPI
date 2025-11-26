@@ -21,7 +21,7 @@ public class CacheConfig {
                 .enableTimeToIdle();
 
         return RedisCacheManager
-                .builder()
+                .builder(redisConnectionFactory)
                 .cacheDefaults(redisCacheConfiguration)
                 .build();
     }
