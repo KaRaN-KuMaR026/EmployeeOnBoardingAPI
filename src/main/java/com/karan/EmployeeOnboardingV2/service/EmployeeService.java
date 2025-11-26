@@ -226,7 +226,7 @@ public class EmployeeService {
     //UPDATE
     @Transactional
     @PreAuthorize("#id == principal.id or hasAuthority('employee:write')")
-    @CachePut(cacheNames = "CACHE_NAME", key = "#id")
+    @CachePut(cacheNames = CACHE_NAME, key = "#id")
     public EmployeeResponseDTO updateEmployee(Long id, EmployeeUpdateDTO updateDTO) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found with Id " + id));
